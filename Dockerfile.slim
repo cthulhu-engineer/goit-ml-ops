@@ -1,0 +1,92 @@
+# Slim Dockerfile - оптимізований образ з multi-stage підходом
+# Мінімізує розмір образу, залишаючи лише необхідні компоненти
+
+# ============================================================================
+# Етап 1: Builder - встановлення залежностей та підготовка середовища
+# ============================================================================
+FROM python:3.11-slim as builder
+
+# Встановлення змінних середовища для build етапу
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Встановлення лише необхідних build залежностей
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    libjpeg-dev \
+    libpng-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Створення віртуального середовища
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Оновлення pip
+RUN pip install --upgrade pip
+
+# Встановлення Python залежностей
+RUN pip install --no-cache-dir \
+    torch \
+    torchvision \
+    --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir \
+    Pillow
+
+# Очищення pip cache
+RUN pip cache purge
+
+# ============================================================================
+# Етап 2: Runtime - мінімальний образ для виконання
+# ============================================================================
+FROM python:3.11-slim as runtime
+
+# Встановлення мета-даних
+LABEL maintainer="Oleh Kilaru"
+LABEL description="Slim Docker image for PyTorch MobileNetV2 inference"
+LABEL version="1.0"
+
+# Встановлення змінних середовища
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Встановлення лише необхідних runtime залежностей
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libjpeg62-turbo \
+    libpng16-16 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Копіювання віртуального середовища з builder етапу
+COPY --from=builder /opt/venv /opt/venv
+
+# Створення non-root користувача
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
+
+# Створення та встановлення робочої директорії
+WORKDIR /app
+
+# Копіювання лише необхідних файлів додатку
+COPY --chown=appuser:appuser inference.py /app/
+COPY --chown=appuser:appuser mobilenet_v2.pt /app/
+COPY --chown=appuser:appuser imagenet_classes.json /app/
+
+# Встановлення прав виконання
+RUN chmod +x /app/inference.py
+
+# Встановлення змінних середовища для додатку
+ENV MODEL_PATH=/app/mobilenet_v2.pt
+ENV CLASSES_PATH=/app/imagenet_classes.json
+
+# Перехід на non-root користувача
+USER appuser
+
+# Перевірка працездатності
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python /app/inference.py --help || exit 1
+
+# Команда за замовчуванням
+CMD ["python", "/app/inference.py", "--help"]

@@ -1,0 +1,131 @@
+# Fat Dockerfile - великий образ з усіма залежностями
+# Базується на Ubuntu та містить повний набір інструментів
+
+FROM ubuntu:22.04
+
+# Встановлення мета-даних
+LABEL maintainer="Oleh Kilaru"
+LABEL description="Fat Docker image for PyTorch MobileNetV2 inference"
+LABEL version="1.0"
+
+# Встановлення змінних середовища
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Встановлення системних залежностей та інструментів розробки
+RUN apt-get update && apt-get install -y \
+    # Python та базові інструменти
+    python3 \
+    python3-pip \
+    python3-dev \
+    python3-venv \
+    # Системні бібліотеки для OpenCV та Pillow
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    # Інструменти розробки
+    build-essential \
+    cmake \
+    git \
+    curl \
+    wget \
+    vim \
+    nano \
+    htop \
+    # Бібліотеки для обробки зображень
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    # Математичні бібліотеки
+    libatlas-base-dev \
+    gfortran \
+    # Networking та debugging tools
+    net-tools \
+    iputils-ping \
+    telnet \
+    strace \
+    gdb \
+    # Додаткові корисні інструменти
+    tree \
+    less \
+    file \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Оновлення pip до останньої версії
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# Встановлення PyTorch та основних залежностей
+RUN pip3 install \
+    torch \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Встановлення решти Python пакетів
+RUN pip3 install \
+    # Бібліотеки для обробки зображень
+    Pillow \
+    scikit-image \
+    # Наукові обчислення
+    numpy \
+    scipy \
+    pandas \
+    matplotlib \
+    seaborn \
+    # Машинне навчання
+    scikit-learn \
+    # Веб-фреймворки (для можливих розширень)
+    flask \
+    fastapi \
+    uvicorn \
+    # Утиліти
+    requests \
+    tqdm \
+    click \
+    # Jupyter для дослідження
+    jupyter \
+    notebook \
+    ipykernel \
+    # Додаткові корисні пакети
+    psutil \
+    pyyaml \
+    joblib
+
+# Створення робочої директорії
+WORKDIR /app
+
+# Копіювання всіх файлів проекту
+COPY . /app/
+
+# Встановлення прав виконання для скриптів
+RUN chmod +x /app/inference.py
+
+# Створення директорії для логів
+RUN mkdir -p /app/logs
+
+# Встановлення змінних середовища для додатку
+ENV MODEL_PATH=/app/mobilenet_v2.pt
+ENV CLASSES_PATH=/app/imagenet_classes.json
+ENV PYTHONPATH=/app
+
+# Відкриття порту для можливих веб-сервісів
+EXPOSE 8000
+
+# Створення non-root користувача для безпеки
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Команда за замовчуванням
+CMD ["python3", "inference.py", "--help"]
