@@ -1,0 +1,5 @@
+Best Model Metadata
+==================
+Run ID: fb001148882048b5b7c391af373ddb59
+Accuracy: 1.0000
+Model Path: runs:/fb001148882048b5b7c391af373ddb59/model
