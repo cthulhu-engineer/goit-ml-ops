@@ -1,0 +1,50 @@
+# AWS Configuration
+region      = "us-east-1"
+aws_profile = "default"
+
+# VPC Configuration
+vpc_name           = "eks-vpc"
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnets    = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+database_subnets   = ["10.0.201.0/24", "10.0.202.0/24", "10.0.203.0/24"]
+
+# EKS Configuration
+cluster_name    = "eks-cluster"
+cluster_version = "1.31"
+
+# EKS Access Configuration
+enable_cluster_private_access = true
+enable_cluster_public_access  = true
+# IMPORTANT: Change this to your IP for production!
+cluster_public_access_cidrs = ["0.0.0.0/0"]
+
+# IAM Users for Cluster Admin Access
+# Example: ["arn:aws:iam::123456789012:user/admin"]
+cluster_admin_users = []
+
+# CPU Node Group Configuration
+cpu_instance_types   = ["t3.medium"]
+cpu_desired_capacity = 2
+cpu_min_capacity     = 1
+cpu_max_capacity     = 4
+cpu_disk_size        = 50
+
+# GPU Node Group Configuration
+gpu_instance_types   = ["g4dn.xlarge"]
+gpu_desired_capacity = 0
+gpu_min_capacity     = 0
+gpu_max_capacity     = 2
+gpu_disk_size        = 100
+
+# Optional: KMS Key for EKS Encryption
+# kms_key_arn = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+
+# Tags
+tags = {
+  Environment = "development"
+  Project     = "eks-infrastructure"
+  ManagedBy   = "terraform"
+  Owner       = "devops-team"
+}
