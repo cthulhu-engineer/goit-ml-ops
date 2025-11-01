@@ -1,0 +1,122 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# Terraform modules (embedded git repositories)
+**/.terraform/modules/
+# Terraform providers (large binary files)
+**/.terraform/providers/
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+*.tfplan.*
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+.kube/
+*.yaml.bak
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# MLflow
+mlruns/
+mlartifacts/
+.mlflow/
+
+# Docker
+.dockerignore
+Dockerfile.dev
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Secrets and sensitive data
+secrets/
+*.pem
+*.key
+*.crt
+.env.local
+.env.production
+.env.staging
+
+# Operating System
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# AWS
+.aws/
+
+# Local development
+local/
+dev/
+.local/
+
+# Backup files
+*.bak
+*.backup

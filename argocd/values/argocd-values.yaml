@@ -1,0 +1,120 @@
+# ArgoCD Configuration Values
+
+# Global configuration
+global:
+  image:
+    tag: "v2.8.4"
+  
+# ArgoCD Server configuration
+server:
+  # Service configuration (використовуємо стандартний порт)
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080  # Ingress configuration (disabled by default)
+  ingress:
+    enabled: false
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Additional server configuration
+  config:
+    # Enable anonymous access for demo purposes
+    url: ""
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    
+    # Repository credentials (will be configured later)
+    repositories: |
+      - type: git
+        url: https://github.com/argoproj/argocd-example-apps.git
+      - name: argo-helm
+        type: helm
+        url: https://argoproj.github.io/argo-helm
+
+# Repository Server
+repoServer:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Application Controller
+controller:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+# Redis
+redis:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Dex (disabled for simplicity)
+dex:
+  enabled: false
+
+# Notifications controller
+notifications:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# ApplicationSet controller
+applicationSet:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# RBAC configuration
+configs:
+  # Server parameters
+  params:
+    server.insecure: true
+    
+  # Default policy
+  policy.default: role:readonly
+  
+  # Admin policy
+  policy.csv: |
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    g, argocd-admins, role:admin
+
+# Enable metrics
+metrics:
+  enabled: true
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/path: "/metrics"
+      prometheus.io/port: "8082"

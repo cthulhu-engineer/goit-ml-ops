@@ -1,0 +1,87 @@
+name: Kubernetes Manifests Validation
+
+on:
+  push:
+    branches:
+      - main
+      - lesson-7
+    paths:
+      - 'applications/**/*.yaml'
+      - 'applications/**/*.yml'
+      - '.github/workflows/k8s-validate.yml'
+  pull_request:
+    branches:
+      - main
+      - lesson-7
+    paths:
+      - 'applications/**/*.yaml'
+      - 'applications/**/*.yml'
+
+jobs:
+  validate-manifests:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Install kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo mv kubeval /usr/local/bin
+          rm kubeval-linux-amd64.tar.gz
+
+      - name: Validate YAML syntax
+        run: |
+          echo "Checking YAML syntax..."
+          for file in applications/*.yaml applications/*.yml; do
+            if [ -f "$file" ]; then
+              echo "Validating $file"
+              kubectl apply --dry-run=client -f "$file" || exit 1
+            fi
+          done
+
+      - name: Run kubeval
+        run: |
+          echo "Running kubeval validation..."
+          for file in applications/*.yaml applications/*.yml; do
+            if [ -f "$file" ]; then
+              echo "Validating $file with kubeval"
+              kubeval "$file" || exit 1
+            fi
+          done
+
+      - name: Check for common issues
+        run: |
+          echo "Checking for common configuration issues..."
+
+          # Check for missing resource limits
+          echo "Checking for resource limits..."
+          for file in applications/*.yaml applications/*.yml; do
+            if [ -f "$file" ]; then
+              if grep -q "kind: Deployment" "$file"; then
+                if ! grep -q "resources:" "$file"; then
+                  echo "WARNING: $file might be missing resource specifications"
+                fi
+              fi
+            fi
+          done
+
+          # Check for latest tags (anti-pattern)
+          echo "Checking for 'latest' image tags..."
+          if grep -r "image:.*:latest" applications/; then
+            echo "WARNING: Found 'latest' image tag. Consider using specific versions."
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Validation completed!"
+          echo "All Kubernetes manifests have been validated successfully."

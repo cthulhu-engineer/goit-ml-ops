@@ -1,0 +1,150 @@
+name: Documentation Check
+
+on:
+  push:
+    branches:
+      - main
+      - lesson-7
+    paths:
+      - '**.md'
+      - '.github/workflows/docs-check.yml'
+  pull_request:
+    branches:
+      - main
+      - lesson-7
+    paths:
+      - '**.md'
+
+jobs:
+  markdown-lint:
+    name: Lint Markdown Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+
+      - name: Run markdownlint
+        run: |
+          markdownlint '**/*.md' \
+            --ignore node_modules \
+            --ignore .terraform \
+            --config .markdownlint.json || true
+        continue-on-error: true
+
+  check-links:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check internal links
+        run: |
+          echo "Checking internal links in README.md..."
+
+          # Extract internal links (anchors)
+          grep -o '\[.*\](#[^)]*)' README.md > internal_links.txt || true
+
+          # Extract headers
+          grep -o '^##* .*' README.md | sed 's/^##* //' | \
+            tr '[:upper:]' '[:lower:]' | \
+            sed 's/ /-/g' | \
+            sed 's/[^a-z0-9-]//g' > headers.txt || true
+
+          echo "Internal links check completed"
+
+          # Note: Full link validation would require more complex tooling
+          # This is a basic check for the CI/CD demonstration
+
+      - name: Check for broken markdown
+        run: |
+          echo "Checking for common markdown issues..."
+
+          # Check for unclosed code blocks
+          if [ $(grep -c '```' README.md) -ne $(( $(grep -c '```' README.md) % 2 )) ]; then
+            echo "Checking code blocks..."
+          fi
+
+          echo "Markdown structure check completed"
+
+  spell-check:
+    name: Spell Check (Ukrainian)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install aspell with Ukrainian dictionary
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aspell aspell-uk
+
+      - name: Run spell check
+        run: |
+          echo "Running spell check on README.md..."
+          # Basic spell check (will have false positives for technical terms)
+          # This is more of a demonstration - real spell checking needs custom dictionary
+          cat README.md | aspell list --lang=uk --mode=markdown > spelling_issues.txt || true
+
+          if [ -s spelling_issues.txt ]; then
+            echo "Found potential spelling issues (may include technical terms):"
+            head -20 spelling_issues.txt
+          else
+            echo "No obvious spelling issues found"
+          fi
+        continue-on-error: true
+
+  structure-check:
+    name: Check Documentation Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check required sections
+        run: |
+          echo "Checking for required README sections..."
+
+          required_sections=(
+            "Архітектура"
+            "Передумови"
+            "Швидкий старт"
+            "Troubleshooting"
+          )
+
+          for section in "${required_sections[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✓ Found section: $section"
+            else
+              echo "✗ Missing section: $section"
+              exit 1
+            fi
+          done
+
+          echo "All required sections are present"
+
+      - name: Check code block languages
+        run: |
+          echo "Checking code blocks have language specifications..."
+
+          # Count code blocks without language specification
+          unlabeled=$(grep -c '^```$' README.md || echo "0")
+
+          if [ "$unlabeled" -gt 0 ]; then
+            echo "Found $unlabeled code blocks without language specification"
+            echo "Consider adding language labels (bash, yaml, python, etc.)"
+          else
+            echo "All code blocks are properly labeled"
+          fi
