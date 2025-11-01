@@ -5,7 +5,8 @@ provider "aws" {
 
 # VPC for EKS
 module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
 
   name = "goit-mlops-vpc"
   cidr = "10.0.0.0/16"
