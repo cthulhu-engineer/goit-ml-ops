@@ -1,0 +1,16 @@
+- job_name: 'sensor-quality-inference'
+  kubernetes_sd_configs:
+    - role: pod
+      namespaces:
+        names:
+          - sensor-quality
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      action: keep
+      regex: sensor-quality-inference
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: namespace
+  metrics_path: '/metrics'
+  scrape_interval: 15s

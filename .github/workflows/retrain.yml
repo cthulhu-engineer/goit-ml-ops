@@ -1,0 +1,89 @@
+name: Model Retraining Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for retraining'
+        required: true
+        default: 'Manual trigger'
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sundays
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/sensor-quality-inference
+
+jobs:
+  retrain-model:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: final-project
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Retrain model
+        run: |
+          echo "🔄 Retraining model..."
+          echo "Reason: ${{ github.event.inputs.reason || 'Scheduled retrain' }}"
+          python model/train_iot_sensors.py
+
+      - name: Upload new model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrained-model
+          path: |
+            model/*.pkl
+            model/*.json
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=retrained-{{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value=latest
+
+      - name: Build and push new Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Update deployment timestamp
+        run: |
+          echo "Model retrained at $(date)" >> model/RETRAIN_LOG.md
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add model/RETRAIN_LOG.md
+          git commit -m "Model retrained: ${{ github.event.inputs.reason || 'Scheduled retrain' }} [skip ci]" || true
+          git push || true
+
+      - name: Trigger ArgoCD sync
+        run: |
+          echo "✅ New model image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "🔄 ArgoCD will automatically sync the deployment"
