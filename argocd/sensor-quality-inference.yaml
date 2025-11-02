@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sensor-quality-inference
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/cthulhu-engineer/goit-ml-ops.git
+    targetRevision: final-project
+    path: helm
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sensor-quality
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

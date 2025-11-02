@@ -1,0 +1,8 @@
+apiVersion: v2
+name: sensor-quality-inference
+description: Helm chart for Sensor Quality Monitoring Service with FastAPI
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: cthulhu-engineer
