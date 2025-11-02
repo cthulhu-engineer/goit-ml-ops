@@ -46,7 +46,6 @@ This project implements a complete MLOps pipeline with:
 | **EKS Cluster** | ![EKS Cluster](images/new/aws-eks-cluster.png) |
 | **EC2 Worker Nodes** | ![EC2 Instances](images/new/aws-ec2-instances.png) |
 | **Load Balancers** | ![Load Balancers](images/new/aws-load-balancers.png) |
-| **VPC & Subnets** | ![VPC](images/new/aws-vpc.png) |
 
 ## 🚀 Quick Start
 
@@ -347,16 +346,3 @@ kubectl delete application sensor-quality-inference -n argocd
 cd terraform
 terraform destroy -auto-approve
 ```
-
-**Estimated cost**: ~$0.28/hour (~$205/month if left running)
-
-## 📚 Additional Resources
-
-- [AWS EKS Setup Guide](AWS_SETUP.md)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-
-## 📝 License
-
-MIT
